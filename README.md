@@ -1,2 +1,2 @@
 # scim
-Speech analysis written by Nim.
+Speech recognition tool-box written by Nim.

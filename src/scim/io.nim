@@ -1,5 +1,4 @@
-import streams
-import arraymancer
+import streams, arraymancer
 
 
 const
@@ -45,6 +44,21 @@ proc readWav(fileName: string): Wav {.discardable.} =
     subchunk2ID = strm.readStr(4)
     subchunk2Size = int strm.readUint32()
 
+  echo chunkID
+  echo chunkSize
+  echo format
+  echo subchunk1ID
+  echo subchunk1Size
+
+  echo audioFormat
+  echo numChannels
+  echo sampleRate
+  echo byteRate
+  echo blockAlign
+  echo bitsPerSample
+
+  echo subchunk2ID
+
 
   var data : seq[int16]
   for _ in 1 .. (subchunk2Size div 2):
@@ -61,11 +75,70 @@ proc readWav(fileName: string): Wav {.discardable.} =
   result = (rate: sampleRate, data: data.toTensor)
 
 
-proc writeWav(fileName: string, rate: int, data: seq[int16]) = 
-  discard
+#[
+    chunkID = strm.readStr(4)
+    chunkSize = strm.readUint32()
+    format = strm.readStr(4)
+
+    subchunk1ID = strm.readStr(4)
+    subchunk1Size = strm.readUint32()
+    audioFormat = strm.readUint16()
+    numChannels = strm.readUint16()
+    sampleRate = strm.readUint32()
+    byteRate = strm.readUint32()
+    blockAlign = strm.readUint16()
+    bitsPerSample = strm.readUint16()
+
+    subchunk2ID = strm.readStr(4)
+    subchunk2Size = int strm.readUint32()
+]#
+
+
+proc writeWav(fileName: string, rate: int, data: Tensor[int16]) = 
+  let strm = newFileStream(open(fileName, fmWrite))
+  defer: strm.close()
+  var channels: int
+  if data.rank == 1:
+    channels = 1
+  else:
+    channels = data.shape[1]
+  
+  
+  let 
+    bitDepth = sizeof(data.type) * 8
+    bytesPerSecond = rate * (bitDepth div 8) * channels
+    blockAlign = channels * (bitDepth div 8)
+  # chunkID
+  strm.write("RIFF")
+  # chunkSize
+  strm.write("\x00\x00\x00\x00")
+  # format   
+  strm.write("WAVE")
+  # subchunk1ID
+  strm.write("fmt ")
+  # subchunk1Size
+  strm.write()
+  # audioFormat
+  strm.write(1)
+  # numChannels
+  strm.write(channels)
+  # sampleRate
+  strm.write(rate)
+  # byteRate
+  strm.write()
+  # blockAlign
+  strm.write()
+  # bitsPerSample
+  strm.write()
+  # subchunk2ID
+  strm.write("data")
+  # subchunk2Size
+  strm.write()
+
 
 
 # let temp: Tensor[int16] = readWav("t1.wav")[1]
 # echo temp[1 .. 10]
 import timeit
-echo timeGo(readWav("t1.wav"))
+# echo timeGo(readWav("t1.wav"))
+discard readWav("t1.wav")
