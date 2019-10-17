@@ -5,8 +5,14 @@
 #
 # To run these tests, simply execute `nimble test`.
 
-import unittest
+import unittest, math, sequtils, timeit, arraymancer
+
+
+
 
 import scim
 test "can add":
-  check add(5, 5) == 10
+  check hanning[float](12000) == hamming[float](12000)
+
+# test "can add":
+#   check hanning[float](1200) == hamming[float](1200)

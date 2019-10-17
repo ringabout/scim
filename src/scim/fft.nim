@@ -108,8 +108,11 @@ proc fft[T: ComplexType](x: seq[T]): seq[Complex64] {.discardable.} =
         w = w * wm
   return a
 
-# echo fft(@[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]) 
-# echo fft1(@[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0])
+import arraymancer
+
+
+# echo timeGo(fft(@[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]))
+# echo timeGo(fft1(@[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]))
 
 
 var aaa: seq[float] = @[]
@@ -118,7 +121,7 @@ for i in 1 .. 2048:
 
 # echo timeGo(fft(aaa))
 # echo timeGo(fft1(aaa))
-var res = fft1(@[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0])
+# var res = fft1(@[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0])
 
-for i in ifft(res):
-  echo formatFloat(abs(i), ffDecimal, 10)
+# for i in ifft(res):
+#   echo formatFloat(abs(i), ffDecimal, 10)

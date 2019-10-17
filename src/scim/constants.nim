@@ -1,5 +1,12 @@
 import math
 
+# 成功
+proc j0(x: cdouble): cdouble {.importc, header: "math.h".}
+echo j0(1.0)
+
+# # 失败
+# proc j0(x: cdouble): cdouble {.importcpp, header: "cmath".}
+# echo j0(2.387)
 
 const
   PI* = math.PI

@@ -139,6 +139,6 @@ proc writeWav(fileName: string, rate: int, data: Tensor[int16]) =
 
 # let temp: Tensor[int16] = readWav("t1.wav")[1]
 # echo temp[1 .. 10]
-import timeit
-# echo timeGo(readWav("t1.wav"))
-discard readWav("t1.wav")
+# import timeit
+# # echo timeGo(readWav("t1.wav"))
+# discard readWav("t1.wav")
