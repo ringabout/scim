@@ -1,8 +1,7 @@
-import math, sequtils, sugar, timeit, arraymancer
-
+import math
 
 const
-  
+
   PI* = math.PI
   TAU* = math.TAU
   E* = math.E
