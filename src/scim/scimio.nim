@@ -112,7 +112,7 @@ proc readWav(fileName: string): Wav {.discardable.} =
 
 
 
-proc writeWav*(fileName: string, rate: uint32, data: Tensor[int16]) =
+proc writeWav*[T](fileName: string, rate: uint32, data: Tensor[T]) =
   let strm = newFileStream(open(fileName, fmWrite))
   defer: strm.close()
   var
@@ -120,10 +120,10 @@ proc writeWav*(fileName: string, rate: uint32, data: Tensor[int16]) =
     subchunk2Size: uint32
   if data.rank == 1:
     channels = 1
-    subchunk2Size = uint32 (data.shape[0] * 2)
+    subchunk2Size = uint32 (data.shape[0] * sizeof(T))
   elif data.rank == 2:
     channels = 2
-    subchunk2Size = uint32 (data.shape[0] * data.shape[1] * 2)
+    subchunk2Size = uint32 (data.shape[0] * data.shape[1] * sizeof(T))
 
 
   let
@@ -152,108 +152,7 @@ proc writeWav*(fileName: string, rate: uint32, data: Tensor[int16]) =
   # blockAlign
   strm.write(blockAlign)
   # bitsPerSample
-  strm.write(uint16(16))
-  # subchunk2ID
-  strm.write("data")
-  # subchunk2Size
-  strm.write(subchunk2Size)
-  for chunk in data.items:
-    strm.write(chunk)
-
-
-
-proc writeWav*(fileName: string, rate: uint32, data: Tensor[int32]) =
-  let strm = newFileStream(open(fileName, fmWrite))
-  defer: strm.close()
-  var
-    channels: uint16
-    subchunk2Size: uint32
-  if data.rank == 1:
-    channels = 1
-    subchunk2Size = uint32 (data.shape[0] * 4)
-  elif data.rank == 2:
-    channels = 2
-    subchunk2Size = uint32 (data.shape[0] * data.shape[1] * 4)
-
-
-  let
-    bitDepth = uint16 16
-    bytesPerSecond = uint32 rate * (bitDepth div 8) * channels
-    blockAlign = uint16 channels * (bitDepth div 8)
-
-  # chunkID
-  strm.write("RIFF")
-  # chunkSize
-  strm.write(36+subchunk2Size)
-  # format
-  strm.write("WAVE")
-  # subchunk1ID
-  strm.write("fmt ")
-  # subchunk1Size 16 for PCM
-  strm.write(uint32(16))
-  # audioFormat 1 for PCM
-  strm.write(uint16(1))
-  # numChannels
-  strm.write(channels)
-  # sampleRate
-  strm.write(rate)
-  # byteRate
-  strm.write(bytesPerSecond)
-  # blockAlign
-  strm.write(blockAlign)
-  # bitsPerSample
-  strm.write(uint16(32))
-  # subchunk2ID
-  strm.write("data")
-  # subchunk2Size
-  strm.write(subchunk2Size)
-  for chunk in data.items:
-    strm.write(chunk)
-
-
-    
-
-proc writeWav*(fileName: string, rate: uint32, data: Tensor[uint8]) =
-  let strm = newFileStream(open(fileName, fmWrite))
-  defer: strm.close()
-  var
-    channels: uint16
-    subchunk2Size: uint32
-  if data.rank == 1:
-    channels = 1
-    subchunk2Size = uint32 data.shape[0] 
-  elif data.rank == 2:
-    channels = 2
-    subchunk2Size = uint32 data.shape[0] * data.shape[1] 
-
-
-  let
-    bitDepth = uint16 16
-    bytesPerSecond = uint32 rate * (bitDepth div 8) * channels
-    blockAlign = uint16 channels * (bitDepth div 8)
-
-  # chunkID
-  strm.write("RIFF")
-  # chunkSize
-  strm.write(36+subchunk2Size)
-  # format
-  strm.write("WAVE")
-  # subchunk1ID
-  strm.write("fmt ")
-  # subchunk1Size 16 for PCM
-  strm.write(uint32(16))
-  # audioFormat 1 for PCM
-  strm.write(uint16(1))
-  # numChannels
-  strm.write(channels)
-  # sampleRate
-  strm.write(rate)
-  # byteRate
-  strm.write(bytesPerSecond)
-  # blockAlign
-  strm.write(blockAlign)
-  # bitsPerSample
-  strm.write(uint16(8))
+  strm.write(uint16(sizeof(T) * 8))
   # subchunk2ID
   strm.write("data")
   # subchunk2Size
