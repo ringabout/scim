@@ -12,6 +12,9 @@ type
   WavFormatError* = Exception
   WavKind = enum
     WavUint8, WavInt16, WavInt32
+  WavData*[T] = tuple
+    data: Tensor[T]
+    rate: uint32
   Wav* = ref object
     case kind*: WavKind
     of WavInt16:
@@ -24,7 +27,7 @@ type
 
 
 
-proc readWav(fileName: string): Wav {.discardable.} =
+proc readWav*(fileName: string): Wav =
   let strm = newFileStream(open(fileName))
   defer: strm.close()
 
@@ -45,21 +48,21 @@ proc readWav(fileName: string): Wav {.discardable.} =
     subchunk2ID = strm.readStr(4)
     subchunk2Size = int strm.readUint32()
 
-  echo chunkID
-  echo chunkSize
-  echo format
-  echo subchunk1ID
-  echo subchunk1Size
+  # echo chunkID
+  # echo chunkSize
+  # echo format
+  # echo subchunk1ID
+  # echo subchunk1Size
 
-  echo audioFormat
-  echo numChannels
-  echo sampleRate
-  echo byteRate
-  echo blockAlign
-  echo bitsPerSample
+  # echo audioFormat
+  # echo numChannels
+  # echo sampleRate
+  # echo byteRate
+  # echo blockAlign
+  # echo bitsPerSample
 
-  echo subchunk2ID
-  echo subchunk2Size
+  # echo subchunk2ID
+  # echo subchunk2Size
   if audioFormat == WAVE_FORMAT_PCM:
     discard
   elif audioFormat == WAVE_FORMAT_IEEE_FLOAT:
@@ -110,6 +113,70 @@ proc readWav(fileName: string): Wav {.discardable.} =
     Note that 8-bit PCM is unsigned.
 ]#
 
+proc readWavData*[T](fileName: string): WavData[T] =
+  let strm = newFileStream(open(fileName))
+  defer: strm.close()
+
+  let
+    chunkID = strm.readStr(4)
+    chunkSize = strm.readUint32()
+    format = strm.readStr(4)
+
+    subchunk1ID = strm.readStr(4)
+    subchunk1Size = strm.readUint32()
+    audioFormat = strm.readUint16()
+    numChannels = strm.readUint16()
+    sampleRate = strm.readUint32()
+    byteRate = strm.readUint32()
+    blockAlign = strm.readUint16()
+    bitsPerSample = strm.readUint16()
+
+    subchunk2ID = strm.readStr(4)
+    subchunk2Size = int strm.readUint32()
+
+  # echo chunkID
+  # echo chunkSize
+  # echo format
+  # echo subchunk1ID
+  # echo subchunk1Size
+
+  # echo audioFormat
+  # echo numChannels
+  # echo sampleRate
+  # echo byteRate
+  # echo blockAlign
+  # echo bitsPerSample
+
+  # echo subchunk2ID
+  # echo subchunk2Size
+  if audioFormat == WAVE_FORMAT_PCM:
+    discard
+  elif audioFormat == WAVE_FORMAT_IEEE_FLOAT:
+    assert false, "please implement WAVE_FORMAT_IEEE_FLOAT"
+    discard
+
+
+  assert chunkID == "RIFF"
+  assert format == "WAVE"
+  assert subchunk1ID == "fmt "
+  # assert audioFormat == 1
+  assert subchunk2ID == "data"
+
+  var data: seq[T]
+  case bitsPerSample:
+    of 16:
+      for _ in 1 .. (subchunk2Size div 2):
+        data.add T(strm.readInt16)
+    of 32:
+      for _ in 1 .. (subchunk2Size div 4):
+        data.add T(strm.readInt32)
+    of 8:
+      for _ in 1 .. subchunk2Size:
+        data.add T(strm.readUint8)
+    else:
+      raise newException(WavFormatError, "don't support this wav format")
+  result = (data.toTensor, sampleRate)
+
 
 
 proc writeWav*[T](fileName: string, rate: uint32, data: Tensor[T]) =
@@ -120,10 +187,9 @@ proc writeWav*[T](fileName: string, rate: uint32, data: Tensor[T]) =
     subchunk2Size: uint32
   if data.rank == 1:
     channels = 1
-    subchunk2Size = uint32 (data.shape[0] * sizeof(T))
   elif data.rank == 2:
     channels = 2
-    subchunk2Size = uint32 (data.shape[0] * data.shape[1] * sizeof(T))
+  subchunk2Size = uint32 (data.size * sizeof(T))
 
 
   let

@@ -1,16 +1,6 @@
 import arraymancer, math
 
 
-proc j0*(x: cdouble): cdouble {.importc, header: "math.h".}
-proc j1*(x: cdouble): cdouble {.importc, header: "math.h".}
-proc jn*(n: cint, x: cdouble): cdouble {.importc, header: "math.h".}
-proc y0*(x: cdouble): cdouble {.importc, header: "math.h".}
-proc y1*(x: cdouble): cdouble {.importc, header: "math.h".}
-proc yn*(n: cint, x: cdouble): cdouble {.importc, header: "math.h".}
-
-
-
-
 const
   ## https://www.advanpix.com/2015/11/11
   COF = [
@@ -107,6 +97,12 @@ const
     ]
 
 
+type
+  NotImplementError* =  Exception
+  WindowKind* = enum
+    Kaiser, Rect, Hanning, Hamming, Blackman, BartLett
+
+
 proc honor(coeff: openArray[float64], x: float64): float64 =
   let n = coeff.len - 1
   result = coeff[n]
@@ -129,10 +125,10 @@ proc besselt0*(x: float64): float64 {.discardable.} =
 
 proc kaiser*[T: SomeFloat](n: int, beta: float): Tensor[T] =
   if n == 1: return ones[T](1)
-  result = newTensor[T](n)
+  result = newTensor[T](1, n)
   let alpha = (n - 1) / 2
   for i in 0 ..< n:
-    result[i] = besselt0(beta * sqrt(1.0-((T(i)-alpha)/alpha) ^ 2)) / besselt0(beta)
+    result[0, i] = besselt0(beta * sqrt(1.0-((T(i)-alpha)/alpha) ^ 2)) / besselt0(beta)
 
 
 
@@ -140,19 +136,18 @@ proc hanning*[T: SomeFloat](n: int): Tensor[T] {.discardable.} =
   ## Creates a hanning window of length n.
   ## echo hanning[float64](12)
   if n == 1: return ones[T](1)
-  result = newTensor[T](n)
+  result = newTensor[T](1, n)
   for i in 0 ..< n:
-    result[i] = 0.5 - 0.5 * cos(2 * i / (n - 1) * Pi)
+    result[0, i] = 0.5 - 0.5 * cos(2 * i / (n - 1) * Pi)
 
 
 proc hamming*[T: SomeFloat](n: int): Tensor[T] {.discardable.} =
   ## Creates a hamming window of length n.
   ## echo hamming[float64](12)
   if n == 1: return ones[T](1)
-  result = newTensor[T](n)
+  result = newTensor[T](1, n)
   for i in 0 ..< n:
-    result[i] = 0.54 - 0.46 * cos(2 * i / (n - 1) * Pi)
-
+    result[0, i] = 0.54 - 0.46 * cos(2 * i / (n - 1) * Pi)
 
 
 
@@ -160,33 +155,71 @@ proc rect*[T: SomeFloat](n: int): Tensor[T] =
   ## Creates a rect window of length n.
   ## echo rect[float64](12)
   if n == 1: return ones[T](1)
-  result = newTensor[T](n)
+  result = newTensor[T](1, n)
   for i in 0 ..< n:
-    result[i] = T(1)
+    result[0, i] = T(1)
 
 
 proc bartlett*[T: SomeFloat](n: int): Tensor[T] =
   ## Creates a rect window of length n.
   ## echo rect[float64](12)
   if n == 1: return ones[T](1)
-  result = newTensor[T](n)
+  result = newTensor[T](1, n)
   for i in 0 ..< n:
-    result[i] = 1 - 2 / (n - 1) * abs((2 * i - n + 1) / 2)
+    result[0, i] = 1 - 2 / (n - 1) * abs((2 * i - n + 1) / 2)
 
 proc blackman*[T: SomeFloat](n: int): Tensor[T] =
   ## Creates a rect window of length n.
   ## echo rect[float64](12)
   if n == 1: return ones[T](1)
-  result = newTensor[T](n)
+  result = newTensor[T](1, n)
   for i in 0 ..< n:
-    result[i] = 0.42 - 0.5 * cos(2 * i / (n - 1) * Pi) +
+    result[0, i] = 0.42 - 0.5 * cos(2 * i / (n - 1) * Pi) +
             0.08 * cos(4 * i / (n - 1) * Pi)
 
 
+proc chooseWindow*[T: SomeFloat](n: int, 
+          kind: WindowKind, beta: float=10): Tensor[T] = 
+  case kind
+  of Kaiser:
+    result = kaiser[T](n, beta)
+  of Rect:
+    result = rect[T](n)
+  of Hanning:
+    result = hanning[T](n)
+  of Hamming:
+    result = hamming[T](n)
+  of Blackman:
+    result = blackman[T](n)
+  of Bartlett:
+    result = bartlett[T](n)
+  
 
+
+proc enFrame*[T: SomeFloat](input: Tensor[T], nFrameLength: int, 
+              nFrameInc: int, windowKind: WindowKind = Hamming): Tensor[T] = 
+  ## frames = length / nFrameLength
+  var data = input
+  if data.rank == 1:
+    data = data.reshape(1, data.shape[0])
+  elif data.rank >= 2:
+    ## later implement mono 
+    raise newException(NotImplementError, "not implement the rank of input is more than 2")
+  let w = chooseWindow[T](nFrameLength, windowKind)
+  let length = data.shape[1]
+  let frames = ((length - nFrameLength) div nFrameInc + 1) + 1
+  let paddingLength = frames * nFrameLength - length
+  result = concat[T](data, zeros[T](1, paddingLength), axis=1).reshape(frames, nFrameLength)
+  result .*= w
+    
 
 
 when isMainModule:
+  # import timeit
+  # var m = monit("utils")
+  # m.start()
+  # hanning[float](12000)
+  # m.finish()
   discard hanning[float](12)
   discard hanning[float32](1)
   discard hanning[float64](12)
@@ -206,7 +239,6 @@ when isMainModule:
 
   discard kaiser[float](12, 14)
 
-  # import timeit
   # echo "test1"
   # echo timeGo(hanning[float](12000))
   # echo "test2"
