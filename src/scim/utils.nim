@@ -204,7 +204,7 @@ when isMainModule:
   discard blackman[float32](12)
   discard blackman[float64](1)
 
-  echo kaiser[float](12, 14)
+  discard kaiser[float](12, 14)
 
   # import timeit
   # echo "test1"

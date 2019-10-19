@@ -1,3 +1,5 @@
-import scim/utils, scim/fft, scim/constants, scim/waveio
+import scim/utils, scim/fft, scim/constants, scim/scimio
 
-export utils, fft, waveio, constants
+export utils, fft, scimio, constants
+
+
