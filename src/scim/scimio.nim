@@ -24,16 +24,6 @@ type
 
 
 
-
-
-#[
-  rate : int
-  Sample rate ostrm wav strmile.
-  data : numpy array
-  Data read strmrom wav strmile.  Data-type is determined strmrom the strmile;
-  see Notes.
-]#
-
 proc readWav(fileName: string): Wav {.discardable.} =
   let strm = newFileStream(open(fileName))
   defer: strm.close()
@@ -104,16 +94,6 @@ proc readWav(fileName: string): Wav {.discardable.} =
     raise newException(WavFormatError, "don't support this wav format")
 
 
-  # for _ in 1 .. (subchunk2Size div 2):
-  #   data.add(strm.readInt16())
-  # 126,  160,  140
-  # var data: pointer = cast[ptr WavData](alloc0(sizeof(int16) * subchunk2Size div 2))
-  # discard strm.readData(data, subchunk2Size div 2)
-  # echo data.repr
-
-
-
-
 #[
     Notes
     -----
@@ -130,24 +110,6 @@ proc readWav(fileName: string): Wav {.discardable.} =
     Note that 8-bit PCM is unsigned.
 ]#
 
-
-#[
-      chunkID = strm.readStr(4)
-    chunkSize = strm.readUint32()
-    format = strm.readStr(4)
-
-    subchunk1ID = strm.readStr(4)
-    subchunk1Size = strm.readUint32()
-    audioFormat = strm.readUint16()
-    numChannels = strm.readUint16()
-    sampleRate = strm.readUint32()
-    byteRate = strm.readUint32()
-    blockAlign = strm.readUint16()
-    bitsPerSample = strm.readUint16()
-
-    subchunk2ID = strm.readStr(4)
-    subchunk2Size = int strm.readUint32()
-]#
 
 
 proc writeWav*(fileName: string, rate: uint32, data: Tensor[int16]) =
@@ -195,7 +157,7 @@ proc writeWav*(fileName: string, rate: uint32, data: Tensor[int16]) =
   strm.write("data")
   # subchunk2Size
   strm.write(subchunk2Size)
-  for chunk in data:
+  for chunk in data.items:
     strm.write(chunk)
 
 
@@ -245,7 +207,7 @@ proc writeWav*(fileName: string, rate: uint32, data: Tensor[int32]) =
   strm.write("data")
   # subchunk2Size
   strm.write(subchunk2Size)
-  for chunk in data:
+  for chunk in data.items:
     strm.write(chunk)
 
 
@@ -296,18 +258,18 @@ proc writeWav*(fileName: string, rate: uint32, data: Tensor[uint8]) =
   strm.write("data")
   # subchunk2Size
   strm.write(subchunk2Size)
-  for chunk in data:
+  for chunk in data.items:
     strm.write(chunk)
 
 
 
+when isMainModule:
+  # let temp: Tensor[int16] = readWav("t1.wav")[1]
+  # echo temp[1 .. 10]
+  # import timeit
+  # # echo timeGo(readWav("t1.wav"))
 
-# let temp: Tensor[int16] = readWav("t1.wav")[1]
-# echo temp[1 .. 10]
-# import timeit
-# # echo timeGo(readWav("t1.wav"))
-
-var d1 = readWav("skip.wav")
-writeWav("write.wav", d1.rate, d1.data16)
-var d2 = readWav("write.wav")
-echo d1.data16 == d2.data16
+  var d1 = readWav("skip.wav")
+  writeWav("write.wav", d1.rate, d1.data16)
+  var d2 = readWav("write.wav")
+  echo d1.data16 == d2.data16
