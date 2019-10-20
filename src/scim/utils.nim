@@ -101,6 +101,8 @@ type
   NotImplementError* =  Exception
   WindowKind* = enum
     Kaiser, Rect, Hanning, Hamming, Blackman, BartLett
+  EnergyKind* = enum
+    AbsKind, SquareKind
 
 
 proc honor(coeff: openArray[float64], x: float64): float64 =
@@ -228,14 +230,60 @@ proc normalize*[T](t: Tensor[T]): Tensor[T] {.noinit.} =
   t / t.max
 
 proc getFrameEnergy*[T: SomeFloat](input: Tensor[T], 
-                    means: string="abs", normalFlag: bool=true): Tensor[T] = 
+                    means: EnergyKind=AbsKind, normalFlag: bool=true): Tensor[T] = 
   case means
-  of "abs":
+  of AbsKind:
     result = input.absSum(axis=1)
-  of "square":
+  of SquareKind:
     result = input.squareSum(axis=1)
   if normalFlag:
     result = result.normalize
+
+
+proc zeroCrossing*[T: SomeFloat](input: Tensor[T]): Tensor[int] = 
+  assert input.rank == 2
+  let 
+    rows = input.shape[0]
+    cols = input.shape[1]
+  result = newTensor[int](1, rows)
+  for i in 0 ..< rows:
+    for j in 1 ..< cols:
+      result[0, i] += ord(input[i, j-1] * input[i, j] < 0)
+
+proc zeroCrossingRate*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
+  assert input.rank == 2
+  let 
+    rows = input.shape[0]
+    cols = input.shape[1]
+  result = newTensor[float](1, rows)
+  for i in 0 ..< rows:
+    for j in 1 ..< cols:
+      result[0, i] += float(input[i, j-1] * input[i, j] < 0)
+    result[0, i] /= cols.float
+
+proc frameAutoCorrlation*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
+  assert input.rank == 2
+  let 
+    rows = input.shape[0] #rows
+    cols = input.shape[1]
+  result = newTensor[float](1, rows)
+  for i in 0 ..< rows:
+    for k in 0 ..< cols:
+      for j in 0 ..< cols - k:
+        result[0, i] += input[i, k + j] * input[i, j]
+
+
+# proc frameAutoCorrlation*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
+#   assert input.rank == 2
+#   let 
+#     rows = input.shape[0] #rows
+#     cols = input.shape[1]
+#   result = newTensor[float](1, rows)
+#   for i in 0 ..< rows:
+#     for k in 0 ..< cols:
+#       for j in 0 ..< cols - k:
+#         result[0, i] += abs(input[i, k + j] - input[i, j])
+
 
 
 when isMainModule:
