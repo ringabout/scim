@@ -26,8 +26,6 @@ proc angle*(t: Tensor[Complex[float32]], degrees: bool = false): Tensor[
   t.map_inline(angle(x, degrees))
 
 
-
-
 echo angle(@[complex(12.0, 4.0), complex(7.0, 8.0)].toTensor)
 echo abs(@[complex(12.0, 4.0), complex(7.0, 8.0)].toTensor)
 

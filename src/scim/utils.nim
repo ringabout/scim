@@ -208,10 +208,34 @@ proc enFrame*[T: SomeFloat](input: Tensor[T], nFrameLength: int,
   let w = chooseWindow[T](nFrameLength, windowKind)
   let length = data.shape[1]
   let frames = ((length - nFrameLength) div nFrameInc + 1) + 1
-  let paddingLength = frames * nFrameLength - length
-  result = concat[T](data, zeros[T](1, paddingLength), axis=1).reshape(frames, nFrameLength)
-  result .*= w
+  let paddingLength = (frames - 1) * nFrameInc + nFrameLength - length
+  result = newTensor[T](frames, nFrameLength)
+  let paddingData = concat[T](data, zeros[T](1, paddingLength), axis=1)
+  for i in 0 ..< frames:
+    let inc = i * nFrameInc
+    result[i, _] = paddingdata[0, inc ..< inc + nFrameLength] .* w
     
+
+proc squareSum*[T](t: Tensor[T], axis: int): Tensor[T] {.noinit.} =
+  t.reduce_axis_inline(axis):
+    x += square(y)
+
+
+proc absSum*[T](t: Tensor[T], axis: int): Tensor[T] {.noinit.} =
+  t.abs.sum(axis) / t.shape[axis].T
+
+proc normalize*[T](t: Tensor[T]): Tensor[T] {.noinit.} = 
+  t / t.max
+
+proc getFrameEnergy*[T: SomeFloat](input: Tensor[T], 
+                    means: string="abs", normalFlag: bool=true): Tensor[T] = 
+  case means
+  of "abs":
+    result = input.absSum(axis=1)
+  of "square":
+    result = input.squareSum(axis=1)
+  if normalFlag:
+    result = result.normalize
 
 
 when isMainModule:
