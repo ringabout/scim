@@ -261,7 +261,7 @@ proc zeroCrossingRate*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
       result[0, i] += float(input[i, j-1] * input[i, j] < 0)
     result[0, i] /= cols.float
 
-proc frameAutoCorrlation*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
+proc autoCorrlation*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
   assert input.rank == 2
   let 
     rows = input.shape[0] #rows
@@ -273,16 +273,16 @@ proc frameAutoCorrlation*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
         result[0, i] += input[i, k + j] * input[i, j]
 
 
-# proc frameAutoCorrlation*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
-#   assert input.rank == 2
-#   let 
-#     rows = input.shape[0] #rows
-#     cols = input.shape[1]
-#   result = newTensor[float](1, rows)
-#   for i in 0 ..< rows:
-#     for k in 0 ..< cols:
-#       for j in 0 ..< cols - k:
-#         result[0, i] += abs(input[i, k + j] - input[i, j])
+proc averMagnDiff*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
+  assert input.rank == 2
+  let 
+    rows = input.shape[0] #rows
+    cols = input.shape[1]
+  result = newTensor[float](1, rows)
+  for i in 0 ..< rows:
+    for k in 0 ..< cols:
+      for j in 0 ..< cols - k:
+        result[0, i] += abs(input[i, k + j] - input[i, j])
 
 
 
