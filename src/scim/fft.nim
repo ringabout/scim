@@ -92,9 +92,11 @@ var a = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0].map(x=>complex(x))
 var b = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0].map(x=>complex(x))
 var c = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0].map(x=>complex(x))
 # echo a
-echo ifft(fft(a))
-echo ifft(fft(b))
-echo ifft(fft(c))
+
+when isMainModule:
+  echo ifft(fft(a))
+  echo ifft(fft(b))
+  echo ifft(fft(c))
 
 
 # echo timeGo(fft(@[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]))

@@ -1,4 +1,4 @@
-import arraymancer, math
+import arraymancer, math, fft
 
 
 const
@@ -289,6 +289,9 @@ proc averMagnDiff*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
       for j in 0 ..< cols - k:
         result[0, i] += abs(input[i, k + j] - input[i, j])
 
+
+   
+  
 
 
 when isMainModule:
