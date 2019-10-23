@@ -1,4 +1,4 @@
-import arraymancer, math, fft
+import arraymancer, math, fft, complex, sugar
 
 
 const
@@ -98,7 +98,7 @@ const
 
 
 type
-  NotImplementError* =  Exception
+  NotImplementError* = Exception
   WindowKind* = enum
     Kaiser, Rect, Hanning, Hamming, Blackman, BartLett
   EnergyKind* = enum
@@ -130,7 +130,8 @@ proc kaiser*[T: SomeFloat](n: int, beta: float): Tensor[T] =
   result = newTensor[T](1, n)
   let alpha = (n - 1) / 2
   for i in 0 ..< n:
-    result[0, i] = besselt0(beta * sqrt(1.0-((T(i)-alpha)/alpha) ^ 2)) / besselt0(beta)
+    result[0, i] = besselt0(beta * sqrt(1.0-((T(i)-alpha)/alpha) ^ 2)) /
+        besselt0(beta)
 
 
 
@@ -180,8 +181,8 @@ proc blackman*[T: SomeFloat](n: int): Tensor[T] =
             0.08 * cos(4 * i / (n - 1) * Pi)
 
 
-proc chooseWindow*[T: SomeFloat](n: int, 
-          kind: WindowKind, beta: float=10): Tensor[T] = 
+proc chooseWindow*[T: SomeFloat](n: int,
+          kind: WindowKind, beta: float = 10): Tensor[T] =
   case kind
   of Kaiser:
     result = kaiser[T](n, beta)
@@ -195,33 +196,33 @@ proc chooseWindow*[T: SomeFloat](n: int,
     result = blackman[T](n)
   of Bartlett:
     result = bartlett[T](n)
-  
-    
-proc preEmphasis*[T: SomeFloat](input: Tensor[T], factor: float): Tensor[T] = 
+
+
+proc preEmphasis*[T: SomeFloat](input: Tensor[T], factor: float): Tensor[T] =
   for i in 1 ..< input.size:
     input[0, i] -= input[0, i - 1] * factor.T
 
 
 
-proc enFrame*[T: SomeFloat](input: Tensor[T], nFrameLength: int, 
-              nFrameInc: int, windowKind: WindowKind = Hamming): Tensor[T] = 
+proc enFrame*[T: SomeFloat](input: Tensor[T], nFrameLength: int,
+              nFrameInc: int, windowKind: WindowKind = Hamming): Tensor[T] =
   ## frames = length / nFrameLength
   var data = input
   if data.rank == 1:
     data = data.reshape(1, data.shape[0])
   elif data.rank >= 2:
-    ## later implement mono 
+    ## later implement mono
     raise newException(NotImplementError, "not implement the rank of input is more than 2")
   let w = chooseWindow[T](nFrameLength, windowKind)
   let length = data.shape[1]
   let frames = ((length - nFrameLength) div nFrameInc + 1) + 1
   let paddingLength = (frames - 1) * nFrameInc + nFrameLength - length
   result = newTensor[T](frames, nFrameLength)
-  let paddingData = concat[T](data, zeros[T](1, paddingLength), axis=1)
+  let paddingData = concat[T](data, zeros[T](1, paddingLength), axis = 1)
   for i in 0 ..< frames:
     let inc = i * nFrameInc
     result[i, _] = paddingdata[0, inc ..< inc + nFrameLength] .* w
-    
+
 
 proc squareSum*[T](t: Tensor[T], axis: int): Tensor[T] {.noinit.} =
   t.reduce_axis_inline(axis):
@@ -231,23 +232,24 @@ proc squareSum*[T](t: Tensor[T], axis: int): Tensor[T] {.noinit.} =
 proc absSum*[T](t: Tensor[T], axis: int): Tensor[T] {.noinit.} =
   t.abs.sum(axis) / t.shape[axis].T
 
-proc normalize*[T](t: Tensor[T]): Tensor[T] {.noinit.} = 
+proc normalize*[T](t: Tensor[T]): Tensor[T] {.noinit.} =
   t / t.max
 
-proc getFrameEnergy*[T: SomeFloat](input: Tensor[T], 
-                    means: EnergyKind=AbsKind, normalFlag: bool=true): Tensor[T] = 
+proc getFrameEnergy*[T: SomeFloat](input: Tensor[T],
+                    means: EnergyKind = AbsKind,
+                        normalFlag: bool = true): Tensor[T] =
   case means
   of AbsKind:
-    result = input.absSum(axis=1)
+    result = input.absSum(axis = 1)
   of SquareKind:
-    result = input.squareSum(axis=1)
+    result = input.squareSum(axis = 1)
   if normalFlag:
     result = result.normalize
 
 
-proc zeroCrossing*[T: SomeFloat](input: Tensor[T]): Tensor[int] = 
+proc zeroCrossing*[T: SomeFloat](input: Tensor[T]): Tensor[int] =
   assert input.rank == 2
-  let 
+  let
     rows = input.shape[0]
     cols = input.shape[1]
   result = newTensor[int](1, rows)
@@ -255,9 +257,9 @@ proc zeroCrossing*[T: SomeFloat](input: Tensor[T]): Tensor[int] =
     for j in 1 ..< cols:
       result[0, i] += ord(input[i, j-1] * input[i, j] < 0)
 
-proc zeroCrossingRate*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
+proc zeroCrossingRate*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
   assert input.rank == 2
-  let 
+  let
     rows = input.shape[0]
     cols = input.shape[1]
   result = newTensor[float](1, rows)
@@ -266,9 +268,9 @@ proc zeroCrossingRate*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
       result[0, i] += float(input[i, j-1] * input[i, j] < 0)
     result[0, i] /= cols.float
 
-proc autoCorrlation*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
+proc autoCorrlation*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
   assert input.rank == 2
-  let 
+  let
     rows = input.shape[0] #rows
     cols = input.shape[1]
   result = newTensor[float](1, rows)
@@ -278,9 +280,9 @@ proc autoCorrlation*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
         result[0, i] += input[i, k + j] * input[i, j]
 
 
-proc averMagnDiff*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
+proc averMagnDiff*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
   assert input.rank == 2
-  let 
+  let
     rows = input.shape[0] #rows
     cols = input.shape[1]
   result = newTensor[float](1, rows)
@@ -289,11 +291,39 @@ proc averMagnDiff*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
       for j in 0 ..< cols - k:
         result[0, i] += abs(input[i, k + j] - input[i, j])
 
-proc frame2Time*(frames, nFrameLength, nFrameInc, rate: int): seq[float] = 
+
+
+proc frame2Time*(frames, nFrameLength, nFrameInc, rate: int): seq[float] =
   for i in 0 ..< frames:
     result.add (i * nFrameInc + nframeLength div 2) / rate
- 
-  
+
+
+proc stftms*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[T]] =
+  assert input.rank == 2
+  # TODO fft
+  let
+    rows = input.shape[0]
+    cols = input.shape[1]
+  var length = 2 ^ int(log2(float(cols)))
+  if length < cols:
+    length *= 2
+  result = newTensor[Complex[T]](rows, length)
+  for i in 0 ..< rows:
+    for j in 0 ..< length:
+      result[i, j] = input[i, _].fft[0, j]
+
+proc periodogram*[T](input: Tensor[Complex[T]]): Tensor[T] =
+  assert input.rank = 2
+  let 
+    rows = input.shape[0]
+    cols = input.shape[1]
+  result = newTensor[T](rows, cols)
+  for i in 0 ..< rows:
+    for j in 0 .. < cols:
+      result[i, j] += abs(input[i, j]) ^ 2
+  # ?
+  result.map(x=>x/cols) 
+
 
 
 when isMainModule:

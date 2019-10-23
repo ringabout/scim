@@ -60,7 +60,8 @@ proc fftAid[T: ComplexType](x: seq[T], flag: float = -1): Tensor[T] =
         temp[k + j] = u + t
         temp[k + j + m2] = u - t
         w = w * wm
-  return temp.toTensor
+  result = temp.toTensor.reshape(1, temp.len)
+
 
 proc fft*[T:ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
   var temp: seq[T]
@@ -68,8 +69,6 @@ proc fft*[T:ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
     temp = x
   elif x is Tensor:
     temp = x.toRawSeq
-  # when T is SomeFloat:
-  #   temp = temp.map(x=>complex(x))
   result = temp.fftAid(-1)
 
 proc fft*[T: SomeFloat](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
@@ -88,12 +87,12 @@ proc ifft*[T:ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
 proc ifft*[T: SomeFloat](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
   result = ifft(x.map(t=>t.complex))
 
-var a = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0].map(x=>complex(x))
-var b = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0].map(x=>complex(x))
-var c = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0].map(x=>complex(x))
 # echo a
 
 when isMainModule:
+  var a = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0].map(x=>complex(x))
+  var b = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0].map(x=>complex(x))
+  var c = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0].map(x=>complex(x))
   echo ifft(fft(a))
   echo ifft(fft(b))
   echo ifft(fft(c))
