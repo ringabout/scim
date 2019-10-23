@@ -289,8 +289,10 @@ proc averMagnDiff*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
       for j in 0 ..< cols - k:
         result[0, i] += abs(input[i, k + j] - input[i, j])
 
-
-   
+proc frame2Time*(frames, nFrameLength, nFrameInc, rate: int): seq[float] = 
+  for i in 0 ..< frames:
+    result.add (i * nFrameInc + nframeLength div 2) / rate
+ 
   
 
 
