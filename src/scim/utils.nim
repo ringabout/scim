@@ -317,13 +317,23 @@ proc periodogram*[T](input: Tensor[Complex[T]]): Tensor[T] =
   let 
     rows = input.shape[0]
     cols = input.shape[1]
-  result = newTensor[T](rows, cols)
+  result = newTensor[T](1, rows)
   for i in 0 ..< rows:
     for j in 0 .. < cols:
-      result[i, j] += abs(input[i, j]) ^ 2
+      result[0, i] += abs(input[i, j]) ^ 2
   # ?
   result.map(x=>x/cols) 
 
+proc frameCepstrum*[T](input: Tensor[Complex[T]]): Tensor[T] = 
+  assert input.rank = 2
+  let 
+    rows = input.shape[0]
+    cols = input.shape[1]
+  result = newTensor[T](rows, cols)   
+  for i in 0 ..< rows:
+    for j in 0 .. < cols:
+      result[i, j] = log2(abs(input[i, j]))
+  result.ifft.map(x=>x.re)
 
 
 when isMainModule:
