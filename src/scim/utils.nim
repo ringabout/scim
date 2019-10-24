@@ -1,4 +1,4 @@
-import arraymancer, math, fft, complex, sugar
+import arraymancer, math, fft, complex, sugar, special
 
 
 const
@@ -198,10 +198,8 @@ proc chooseWindow*[T: SomeFloat](n: int,
     result = bartlett[T](n)
 
 
-proc preEmphasis*[T: SomeFloat](input: Tensor[T], factor: float): Tensor[T] =
-  for i in 1 ..< input.size:
-    input[0, i] -= input[0, i - 1] * factor.T
-
+proc preEmphasis*[T: SomeFloat](input: Tensor[T], shift: int, factor: float): Tensor[T] =
+  input - input.roll(shift) * factor.T
 
 
 proc enFrame*[T: SomeFloat](input: Tensor[T], nFrameLength: int,
