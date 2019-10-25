@@ -59,12 +59,6 @@ proc roll*[T](t: Tensor[T], shift: int=1, axis:int= -1): Tensor[T] =
         k = t
       result[i, k] = temp
 
-        
-
-
-    
-
-echo roll[int](@[@[1, 2, 3, 4, 5, 6, 7, 8], @[1, 2, 3, 4, 5, 6, 7, 8], @[1, 2, 3, 4, 5, 6, 7, 8]].toTensor, 2)
 
 
 

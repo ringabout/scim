@@ -1,4 +1,4 @@
-import arraymancer, math, fft, complex, sugar, special
+import arraymancer, math, fft, complex, sugar, special, fenv
 
 
 const
@@ -310,7 +310,7 @@ proc stftms*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[T]] =
     for j in 0 ..< length:
       result[i, j] = input[i, _].fft[0, j]
 
-proc periodogram*[T](input: Tensor[Complex[T]]): Tensor[T] =
+proc periodogram*[T: SomeFloat](input: Tensor[Complex[T]]): Tensor[T] =
   assert input.rank = 2
   let 
     rows = input.shape[0]
@@ -322,7 +322,7 @@ proc periodogram*[T](input: Tensor[Complex[T]]): Tensor[T] =
   # ?
   result.map(x=>x/cols) 
 
-proc frameCepstrum*[T](input: Tensor[Complex[T]]): Tensor[T] = 
+proc frameCepstrum*[T: SomeFloat](input: Tensor[Complex[T]]): Tensor[T] = 
   assert input.rank = 2
   let 
     rows = input.shape[0]
@@ -330,7 +330,10 @@ proc frameCepstrum*[T](input: Tensor[Complex[T]]): Tensor[T] =
   result = newTensor[T](rows, cols)   
   for i in 0 ..< rows:
     for j in 0 .. < cols:
-      result[i, j] = log2(abs(input[i, j]))
+      var nonZero = abs(input[i, j])
+      if nonZero == 0:
+        nonZero = epsilon(T)
+      result[i, j] = log2(nonZero)
   result.ifft.map(x=>x.re)
 
 
