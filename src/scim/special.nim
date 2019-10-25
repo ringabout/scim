@@ -31,15 +31,48 @@ proc angle*(t: Tensor[Complex[float32]], degrees: bool = false): Tensor[
 
 
 # TODO axis
-proc roll*[T](t: Tensor[T], shift: int=1, axis:int= -1): Tensor[T] = 
+proc roll*[T](input: Tensor[T], shift: int=1, axis:int= -1): Tensor[T] = 
   if shift == 0:
-    return t 
-  result = t
-  if t.rank == 1:
-    result = t.reshape(1, t.size)
+    return input
+
+  if input.rank == 1:
+    let cols = input.size
+    var s: int = shift
+    while s < 0:
+      s += cols
+    s = s mod cols
+    result = newTensor[T](1, cols)
+    let divPoint = cols - s
+    for j in 0 ..< divPoint:
+      result[0, j] = input[j+s]
+    for j in divPoint ..< cols:
+      result[0, j] = input[j+s-cols]
+  elif input.rank == 2:
+    let
+      rows = input.shape[0]
+      cols = input.shape[1]
+    var s: int = shift
+    while s < 0:
+      s += cols
+    s = s mod cols
+    result = newTensor[T](rows, cols)
+    let divPoint = cols - s
+    for i in 0 ..< rows:
+      for j in 0 ..< divPoint:
+        result[i, j] = input[i, j+s]
+      for j in divPoint ..< cols:
+        result[i, j] = input[i, j+s-cols]
+
+
+proc roll*[T](input: var Tensor[T], shift: int=1, axis:int= -1) = 
+  if shift == 0:
+    return
+
+  if input.rank == 1:
+    input = input.reshape(1, input.size)
   let 
-    rows = result.shape[0]
-    cols = result.shape[1]
+    rows = input.shape[0]
+    cols = input.shape[1]
   var s: int = shift
   while s < 0:
     s += cols
@@ -47,7 +80,7 @@ proc roll*[T](t: Tensor[T], shift: int=1, axis:int= -1): Tensor[T] =
   let n = gcd(cols, s)
   for i in 0 ..< rows:
     for j in 0 ..< n:
-      let temp = result[i, j]
+      let temp = input[i, j]
       var k: int = j
       while true:
         var t = k + s
@@ -55,10 +88,9 @@ proc roll*[T](t: Tensor[T], shift: int=1, axis:int= -1): Tensor[T] =
           t -= cols
         if t == j:
           break
-        result[i, k] = result[i, t]
+        input[i, k] = input[i, t]
         k = t
-      result[i, k] = temp
-
+      input[i, k] = temp
 
 
 
