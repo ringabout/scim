@@ -135,7 +135,7 @@ proc kaiser*[T: SomeFloat](n: int, beta: float): Tensor[T] =
 
 
 
-proc hanning*[T: SomeFloat](n: int): Tensor[T] {.discardable.} =
+proc hanning*[T: SomeFloat](n: int): Tensor[T] =
   ## Creates a hanning window of length n.
   ## echo hanning[float64](12)
   if n == 1: return ones[T](1)
@@ -144,7 +144,7 @@ proc hanning*[T: SomeFloat](n: int): Tensor[T] {.discardable.} =
     result[0, i] = 0.5 - 0.5 * cos(2 * i / (n - 1) * Pi)
 
 
-proc hamming*[T: SomeFloat](n: int): Tensor[T] {.discardable.} =
+proc hamming*[T: SomeFloat](n: int): Tensor[T] =
   ## Creates a hamming window of length n.
   ## echo hamming[float64](12)
   if n == 1: return ones[T](1)
