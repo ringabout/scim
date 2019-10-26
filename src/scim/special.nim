@@ -1,4 +1,4 @@
-import arraymancer, math, complex
+import arraymancer, math, complex, fenv
 
 type
   RankError* = Exception
@@ -95,18 +95,21 @@ proc roll*[T](input: var Tensor[T], shift: int=1, axis:int= -1) =
 
 
 
-proc frequency2mel*[T](freq: T): T = 
+proc frequency2mel*[T: SomeFloat](freq: T): T = 
   ## converting from frequency to Mel scale.
   ## freq: The frequency values in Hz.
   ## returns: The mel scale values.
-  return 1127 * log(1 + freq / 700.0)
+  var nonZero = 1.0 + freq / 700.0
+  if nonZero == 0:
+    nonZero = epsilon(T)
+  return 1127.0 * ln(nonZero)
 
 
-proc mel2frequency*[T](mel: T): T = 
+proc mel2frequency*[T: SomeFloat](mel: T): T = 
   ## converting from Mel scale to frequency.
   ## param mel: The mel scale values.
   ## returns: The frequency values in Hz.
-  return 700 * (exp(mel / 1127.0) - 1)
+  return 700.0 * (exp(mel / 1127.0) - 1.0)
 
 
 makeUniversal(j0)
