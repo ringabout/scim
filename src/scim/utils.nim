@@ -333,8 +333,10 @@ proc frameCepstrum*[T: SomeFloat](input: Tensor[Complex[T]]): Tensor[T] =
       var nonZero = abs(input[i, j])
       if nonZero == 0:
         nonZero = epsilon(T)
-      result[i, j] = log2(nonZero)
+      result[i, j] = ln(nonZero)
   result.ifft.map(x=>x.re)
+
+
 
 
 when isMainModule:

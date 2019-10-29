@@ -89,13 +89,52 @@ proc ifft*[T: SomeFloat](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
 
 # echo a
 
+proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float64]] =
+  assert input.rank == 2
+  var
+    n = input.shape[1]
+    half = n div 2
+    A = newTensor[Complex[T]](half)
+    B = newTensor[Complex[T]](half)
+    IA = newTensor[Complex[T]](half)
+    IB = newTensor[Complex[T]](half)
+    X = newTensor[Complex[T]](1, half)
+  result = newTensor[Complex[T]](1, n)
+  for k in 0 ..< half:
+    let 
+      coeff = 2.0 * float(k) * PI / float(n)
+      cosPart = 0.5 * cos(coeff)
+      sinPart = 0.5 * sin(coeff)
+    A[k] = complex(0.5 - sinPart, -cosPart)
+    B[k] = complex(0.5 + sinPart, cosPart)
+    IA[k] = conjugate(A[k])
+    IB[k] = conjugate(B[k])
+  for i in 0 ..< half:
+    X[0, i] = complex(input[0, 2 * i], input[0, 2 * i + 1])
+  var temp = newTensor[Complex[T]](1, half + 1)
+  # TODO not 2 ^ n
+  temp[0, 0 ..< half] = X.fft
+  temp[0, half] = temp[0, 0]
+  result[0, 0] = temp[0, 0] * A[0] + conjugate(temp[0, half]) * B[0]
+  for j in 1 ..< half:
+    result[0, j] = temp[0, j] * A[j] + conjugate(temp[0, half - j]) * B[j]
+    result[0, n-j] = conjugate(result[0, j])
+  result[0, half] = complex(temp[0, 0].re - temp[0, 0].im, 0.0)
+  
+
+    
+ 
+
+
 when isMainModule:
-  var a = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0].map(x=>complex(x))
-  var b = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0].map(x=>complex(x))
-  var c = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0].map(x=>complex(x))
-  echo ifft(fft(a))
-  echo ifft(fft(b))
-  echo ifft(fft(c))
+  # var a = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0].map(x=>complex(x))
+  # var b = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0].map(x=>complex(x))
+  var c = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0].toTensor.reshape(1, 8)
+  # echo ifft(fft(a))
+  # echo ifft(fft(b))
+  echo fft(c)
+  echo rfft(c)
+  # echo ifft(rfft(c))
 
 
 # echo timeGo(fft(@[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]))
