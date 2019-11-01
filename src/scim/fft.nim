@@ -7,7 +7,6 @@ type
 
 
 
-
 proc bitReverseCopy[T: ComplexType](x: seq[T]): seq[T] = 
   let n = x.len
   var mid = x
@@ -96,8 +95,8 @@ proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float64]] =
     half = n div 2
     A = newTensor[Complex[T]](half)
     B = newTensor[Complex[T]](half)
-    IA = newTensor[Complex[T]](half)
-    IB = newTensor[Complex[T]](half)
+    # IA = newTensor[Complex[T]](half)
+    # IB = newTensor[Complex[T]](half)
     X = newTensor[Complex[T]](1, half)
   result = newTensor[Complex[T]](1, n)
   for k in 0 ..< half:
@@ -107,8 +106,8 @@ proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float64]] =
       sinPart = 0.5 * sin(coeff)
     A[k] = complex(0.5 - sinPart, -cosPart)
     B[k] = complex(0.5 + sinPart, cosPart)
-    IA[k] = conjugate(A[k])
-    IB[k] = conjugate(B[k])
+    # IA[k] = conjugate(A[k])
+    # IB[k] = conjugate(B[k])
   for i in 0 ..< half:
     X[0, i] = complex(input[0, 2 * i], input[0, 2 * i + 1])
   var temp = newTensor[Complex[T]](1, half + 1)
@@ -122,19 +121,51 @@ proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float64]] =
   result[0, half] = complex(temp[0, 0].re - temp[0, 0].im, 0.0)
   
 
-    
+proc dct*[T: SomeFloat](input: Tensor[T]): Tensor[float64] =
+  assert input.rank == 2
+  let
+    rows = input.shape[0]
+    cols = input.shape[1]
+    ## assert rows == 1
+    n = input.size
+    half = (n - 1) div 2
+  var v = newTensor[T](rows, cols)
+  v[0, 0 .. half] = input[0, _.._|2]
+  if (n - 1) mod 2 == 1: 
+    v[0, half+1 .. _] = input[0, ^1..0|-2]
+  else:
+    v[0, half+1 .. _] = input[0, ^2..0|-2]
+  var res = v.rfft
+  for i in 0 ..< res.size:
+    res[0, i] *= complex(2.0) * exp(complex(0.0, -Pi * float(i) / (2.0 * float(n))))
+  return res.map(x=>x.re)
+  
  
 
 
 when isMainModule:
+  import timeit
   # var a = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0].map(x=>complex(x))
   # var b = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0].map(x=>complex(x))
-  var c = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0].toTensor.reshape(1, 8)
+  # var c = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0].toTensor.reshape(1, 8)
+  timeOnce:
+    discard
+    # var c = randomTensor[float](1, 1024, 3.0)
+    # var c = randomTensor[float](1, 4096, max=2.0)
+  
   # echo ifft(fft(a))
   # echo ifft(fft(b))
-  echo fft(c)
-  echo rfft(c)
+  # let c = randomTensor[float](1, 4096, max=2.0)
+  # var s1 = monit("fft")
+  # var s2 = monit("rfft")
+  # s1.start()
+  # echo fft(c)[0, 2]
+  # s1.finish()
+  # s2.start()
+  # echo rfft(c)[0, 2]
+  # s2.finish()
   # echo ifft(rfft(c))
+
 
 
 # echo timeGo(fft(@[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]))
