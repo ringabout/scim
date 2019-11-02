@@ -95,7 +95,7 @@ proc roll*[T](input: var Tensor[T], shift: int=1, axis:int= -1) =
 
 
 
-proc frequency2mel*[T: SomeFloat](freq: T): T = 
+proc freq2mel*[T: SomeFloat](freq: T): T = 
   ## converting from frequency to Mel scale.
   ## freq: The frequency values in Hz.
   ## returns: The mel scale values.
@@ -105,7 +105,7 @@ proc frequency2mel*[T: SomeFloat](freq: T): T =
   return 1127.0 * ln(nonZero)
 
 
-proc mel2frequency*[T: SomeFloat](mel: T): T = 
+proc mel2freq*[T: SomeFloat](mel: T): T = 
   ## converting from Mel scale to frequency.
   ## param mel: The mel scale values.
   ## returns: The frequency values in Hz.

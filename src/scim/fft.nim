@@ -1,13 +1,13 @@
 import math, complex, timeit, sugar, arraymancer, sequtils
- 
 
-  
+
+
 type
   ComplexType = Complex[float64] | Complex[float32]
 
 
 
-proc bitReverseCopy[T: ComplexType](x: seq[T]): seq[T] = 
+proc bitReverseCopy[T: ComplexType](x: seq[T]): seq[T] =
   let n = x.len
   var mid = x
   var
@@ -30,7 +30,7 @@ proc bitReverseCopy[T: ComplexType](x: seq[T]): seq[T] =
 
 
 proc fftAid[T: ComplexType](x: seq[T], flag: float = -1): Tensor[T] =
-  var 
+  var
     n = x.len
     n1 = int(log2(n.float32))
     n2 = 2 ^ n1
@@ -44,16 +44,16 @@ proc fftAid[T: ComplexType](x: seq[T], flag: float = -1): Tensor[T] =
     temp.add(complex(0.0))
   temp = bitReverseCopy[T](temp)
   for s in 1 .. n1:
-    let 
+    let
       m = 2 ^ s
-      # flag * 2 * Pi 
+      # flag * 2 * Pi
       wm = exp(complex(0.0, flag * 2.0 * Pi / float(m)))
- 
-    for k in countup(0, n - 1 , m):
+
+    for k in countup(0, n - 1, m):
       var w = complex(1.0)
       let m2 = m div 2
       for j in 0 ..< m2:
-        let 
+        let
           t = w * temp[k + j + m2]
           u = temp[k + j]
         temp[k + j] = u + t
@@ -62,7 +62,7 @@ proc fftAid[T: ComplexType](x: seq[T], flag: float = -1): Tensor[T] =
   result = temp.toTensor.reshape(1, temp.len)
 
 
-proc fft*[T:ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
+proc fft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
   var temp: seq[T]
   when x is seq:
     temp = x
@@ -73,7 +73,7 @@ proc fft*[T:ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
 proc fft*[T: SomeFloat](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
   result = fft(x.map(t=>t.complex))
 
-proc ifft*[T:ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
+proc ifft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
   var temp: seq[T]
   when x is seq:
     temp = x
@@ -100,7 +100,7 @@ proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float64]] =
     X = newTensor[Complex[T]](1, half)
   result = newTensor[Complex[T]](1, n)
   for k in 0 ..< half:
-    let 
+    let
       coeff = 2.0 * float(k) * PI / float(n)
       cosPart = 0.5 * cos(coeff)
       sinPart = 0.5 * sin(coeff)
@@ -119,7 +119,7 @@ proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float64]] =
     result[0, j] = temp[0, j] * A[j] + conjugate(temp[0, half - j]) * B[j]
     result[0, n-j] = conjugate(result[0, j])
   result[0, half] = complex(temp[0, 0].re - temp[0, 0].im, 0.0)
-  
+
 
 proc dct*[T: SomeFloat](input: Tensor[T]): Tensor[float64] =
   assert input.rank == 2
@@ -131,7 +131,7 @@ proc dct*[T: SomeFloat](input: Tensor[T]): Tensor[float64] =
     half = (n - 1) div 2
   var v = newTensor[T](rows, cols)
   v[0, 0 .. half] = input[0, _.._|2]
-  if (n - 1) mod 2 == 1: 
+  if (n - 1) mod 2 == 1:
     v[0, half+1 .. _] = input[0, ^1..0|-2]
   else:
     v[0, half+1 .. _] = input[0, ^2..0|-2]
@@ -139,8 +139,7 @@ proc dct*[T: SomeFloat](input: Tensor[T]): Tensor[float64] =
   for i in 0 ..< res.size:
     res[0, i] *= complex(2.0) * exp(complex(0.0, -Pi * float(i) / (2.0 * float(n))))
   return res.map(x=>x.re)
-  
- 
+
 
 
 when isMainModule:
@@ -152,7 +151,7 @@ when isMainModule:
     discard
     # var c = randomTensor[float](1, 1024, 3.0)
     # var c = randomTensor[float](1, 4096, max=2.0)
-  
+
   # echo ifft(fft(a))
   # echo ifft(fft(b))
   # let c = randomTensor[float](1, 4096, max=2.0)

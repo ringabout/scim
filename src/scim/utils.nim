@@ -198,7 +198,8 @@ proc chooseWindow*[T: SomeFloat](n: int,
     result = bartlett[T](n)
 
 
-proc preEmphasis*[T: SomeFloat](input: Tensor[T], shift: int, factor: float): Tensor[T] =
+proc preEmphasis*[T: SomeFloat](input: Tensor[T], shift: int,
+    factor: float): Tensor[T] =
   input - input.roll(shift) * factor.T
 
 
@@ -312,7 +313,7 @@ proc stftms*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[T]] =
 
 proc periodogram*[T: SomeFloat](input: Tensor[Complex[T]]): Tensor[T] =
   assert input.rank = 2
-  let 
+  let
     rows = input.shape[0]
     cols = input.shape[1]
   result = newTensor[T](1, rows)
@@ -320,14 +321,14 @@ proc periodogram*[T: SomeFloat](input: Tensor[Complex[T]]): Tensor[T] =
     for j in 0 .. < cols:
       result[0, i] += abs(input[i, j]) ^ 2
   # ?
-  result.map(x=>x/cols) 
+  result.map(x=>x/cols)
 
-proc frameCepstrum*[T: SomeFloat](input: Tensor[Complex[T]]): Tensor[T] = 
+proc frameCepstrum*[T: SomeFloat](input: Tensor[Complex[T]]): Tensor[T] =
   assert input.rank = 2
-  let 
+  let
     rows = input.shape[0]
     cols = input.shape[1]
-  result = newTensor[T](rows, cols)   
+  result = newTensor[T](rows, cols)
   for i in 0 ..< rows:
     for j in 0 .. < cols:
       var nonZero = abs(input[i, j])
@@ -337,6 +338,22 @@ proc frameCepstrum*[T: SomeFloat](input: Tensor[Complex[T]]): Tensor[T] =
   result.ifft.map(x=>x.re)
 
 
+proc melBanks*[T: SomeFloat](rank, n: int, frameRate: float, fl,
+    fh: float): Tensor[T] =
+  var temp = newTensor[T](1, rank + 2)
+  result = newTensor[T](rank, n)
+  for i in 0 .. rank + 2:
+    temp[i] (n / frameRate) * mel2freq(freq2mel(fl) + i * (freq2mel(fh) -
+        freq2mel(fl)) / (rank+1))
+
+  for m in 1 .. rank:
+    for k in 0 .. n:
+      if temp[m - 1] <= k and k <= temp[m]:
+        result[m - 1, k] = (k - temp[m - 1]) / (temp[m] - temp[m - 1])
+      elif temp[m] <= k and k <= temp[m + 1]:
+        result[m - 1, k] = (temp[m + 1] - k) / (temp[m + 1] - temp[m])
+
+proc frameMelCoeff*[T]()
 
 
 when isMainModule:
