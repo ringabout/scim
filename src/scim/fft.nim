@@ -3,7 +3,7 @@ import math, complex, timeit, sugar, arraymancer, sequtils
 
 
 type
-  ComplexType = Complex[float64] | Complex[float32]
+  ComplexType = Complex[float] | Complex[float32]
 
 
 
@@ -71,7 +71,7 @@ proc fftAid[T: ComplexType](x: seq[T], flag: float = -1): Tensor[T] =
   result = temp.toTensor.reshape(1, temp.len)
 
 
-proc fft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
+proc fft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float]] =
   var temp: seq[T]
   when x is seq:
     temp = x
@@ -79,10 +79,10 @@ proc fft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
     temp = x.toRawSeq
   result = temp.fftAid(-1)
 
-proc fft*[T: SomeFloat](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
+proc fft*[T: SomeFloat](x: seq[T] | Tensor[T]): Tensor[Complex[float]] =
   result = fft(x.map(t=>t.complex))
 
-proc ifft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
+proc ifft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float]] =
   var temp: seq[T]
   when x is seq:
     temp = x
@@ -90,14 +90,14 @@ proc ifft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
     temp = x.toRawSeq
   # when T is SomeFloat:
   #   temp = temp.map(x=>complex(x))
-  result = temp.fftAid(1).map(item => item / temp.len.float64)
+  result = temp.fftAid(1).map(item => item / temp.len.float)
 
-proc ifft*[T: SomeFloat](x: seq[T] | Tensor[T]): Tensor[Complex[float64]] =
+proc ifft*[T: SomeFloat](x: seq[T] | Tensor[T]): Tensor[Complex[float]] =
   result = ifft(x.map(t=>t.complex))
 
 # echo a
 
-proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float64]] =
+proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float]] =
   assert input.rank == 2
   var
     n = input.shape[1]
@@ -130,7 +130,7 @@ proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float64]] =
   result[0, half] = complex(temp[0, 0].re - temp[0, 0].im, 0.0)
 
 
-proc dct*[T: SomeFloat](input: Tensor[T]): Tensor[float64] =
+proc dct*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
   assert input.rank == 2
   let
     rows = input.shape[0]
@@ -149,15 +149,44 @@ proc dct*[T: SomeFloat](input: Tensor[T]): Tensor[float64] =
     res[0, i] *= complex(2.0) * exp(complex(0.0, -Pi * float(i) / (2.0 * float(n))))
   return res.map(x=>x.re)
 
+  # def transform(vector):
+  #   result = []
+  #   factor = math.pi / len(vector)
+  #   for i in range(len(vector)):
+  #     sum = 0.0
+  #     for (j, val) in enumerate(vector):
+  #       sum += val * math.cos((j + 0.5) * i * factor)
+  #     result.append(sum)
+  #   return result
+  
+proc naiveDct*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
+  assert input.rank == 2
+  let
+    rows = input.shape[0]
+    cols = input.shape[1]
+    factor = Pi / T(cols)
+  result = newTensor[float](1, cols)
+  for i in 0 ..< cols:
+    var s: T
+    for j in 0 ..< cols:
+      s += input[0, j] * cos((T(j) + 0.5) * T(i) * factor)
+    result[0, i] = 2 * s 
+
+
 
 
 when isMainModule:
   import timeit
   # var a = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0].map(x=>complex(x))
   # var b = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0].map(x=>complex(x))
-  # var c = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0].toTensor.reshape(1, 8)
+  # var c = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0].toTensor.reshape(1, 9)
+  var c = randomTensor[float](1, 256, 3.0)
   timeOnce:
-    discard
+    echo dct(c)
+  timeOnce:
+    echo naiveDct(c)
+  # timeOnce:
+  #   discard
     # var c = randomTensor[float](1, 1024, 3.0)
     # var c = randomTensor[float](1, 4096, max=2.0)
 

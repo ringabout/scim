@@ -19,8 +19,8 @@ proc angle*[T: SomeFloat](z: Complex[T], degrees: bool = false): T =
   if degrees:
     result *= 180 / Pi
 
-proc angle*(t: Tensor[Complex[float64]], degrees: bool = false): Tensor[
-    float64] {.noInit.} =
+proc angle*(t: Tensor[Complex[float]], degrees: bool = false): Tensor[
+    float] {.noInit.} =
   ## Return a Tensor with absolute values of all elements
   t.map_inline(angle(x, degrees))
 

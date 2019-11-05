@@ -105,7 +105,7 @@ type
     AbsKind, SquareKind
 
 
-proc honor(coeff: openArray[float64], x: float64): float64 =
+proc honor(coeff: openArray[float], x: float): float =
   let n = coeff.len - 1
   result = coeff[n]
   for i in countdown(n - 1, 0, 1):
@@ -113,9 +113,9 @@ proc honor(coeff: openArray[float64], x: float64): float64 =
 
 
 
-proc besselt0*(x: float64): float64 {.discardable.} =
+proc besselt0*(x: float): float {.discardable.} =
   ## the modified zeroth-order Bessel function.
-  var b: float64 = abs(x)
+  var b: float = abs(x)
   if x < 15.5:
     b = (b / 2) ^ 2
     result = b * honor(COF, b) + 1.0
@@ -351,7 +351,7 @@ proc melBanks*[T: SomeFloat](rank, n, rate: int, fl, fh: T): Tensor[T] =
 
 
 
-proc frameMelCoeff*[T](input: Tensor[Complex[T]]; rate: int, rank: int): Tensor[float64] = 
+proc frameMelCoeff*[T](input: Tensor[Complex[T]]; rate: int, rank: int): Tensor[float] = 
   assert input.rank == 2
   let
     rows = input.shape[0]
@@ -367,9 +367,9 @@ proc frameMelCoeff*[T](input: Tensor[Complex[T]]; rate: int, rank: int): Tensor[
       for k in 0 ..< cols:
         melData[i, j] += temp[i, k] * mel[j, k]
       melData[i, j] = log2(melData[i, j])
-  result = newTensor[float64](rows, rank)
+  result = newTensor[float](rows, rank)
   for i in 0 ..< rows:
-    result[i, _.._] = dct[T](melData[i, _.._])
+    result[i, _.._] = naiveDct[T](melData[i, _.._])
 
   
 
