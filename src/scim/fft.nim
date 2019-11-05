@@ -149,15 +149,7 @@ proc dct*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
     res[0, i] *= complex(2.0) * exp(complex(0.0, -Pi * float(i) / (2.0 * float(n))))
   return res.map(x=>x.re)
 
-  # def transform(vector):
-  #   result = []
-  #   factor = math.pi / len(vector)
-  #   for i in range(len(vector)):
-  #     sum = 0.0
-  #     for (j, val) in enumerate(vector):
-  #       sum += val * math.cos((j + 0.5) * i * factor)
-  #     result.append(sum)
-  #   return result
+
   
 proc naiveDct*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
   assert input.rank == 2
