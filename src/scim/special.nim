@@ -95,17 +95,33 @@ proc roll*[T](input: var Tensor[T], shift: int=1, axis:int= -1) =
 
 
 
-proc freq2mel*[T: SomeFloat](freq: T): T = 
+proc freq2mel*(freq: float): float = 
   ## converting from frequency to Mel scale.
   ## freq: The frequency values in Hz.
   ## returns: The mel scale values.
   var nonZero = 1.0 + freq / 700.0
   if nonZero == 0:
-    nonZero = epsilon(T)
+    nonZero = epsilon(float)
+  return 1127.0 * ln(nonZero)
+
+proc freq2mel*(freq: float32): float32 = 
+  ## converting from frequency to Mel scale.
+  ## freq: The frequency values in Hz.
+  ## returns: The mel scale values.
+  var nonZero = 1.0 + freq / 700.0
+  if nonZero == 0:
+    nonZero = epsilon(float32)
   return 1127.0 * ln(nonZero)
 
 
-proc mel2freq*[T: SomeFloat](mel: T): T = 
+proc mel2freq*(mel: float): float = 
+  ## converting from Mel scale to frequency.
+  ## param mel: The mel scale values.
+  ## returns: The frequency values in Hz.
+  return 700.0 * (exp(mel / 1127.0) - 1.0)
+
+
+proc mel2freq*(mel: float32): float32 = 
   ## converting from Mel scale to frequency.
   ## param mel: The mel scale values.
   ## returns: The frequency values in Hz.

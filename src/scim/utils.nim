@@ -227,7 +227,6 @@ proc squareSum*[T](t: Tensor[T], axis: int): Tensor[T] {.noinit.} =
   t.reduce_axis_inline(axis):
     x += square(y)
 
-
 proc absSum*[T](t: Tensor[T], axis: int): Tensor[T] {.noinit.} =
   t.abs.sum(axis) / t.shape[axis].T
 
@@ -303,13 +302,11 @@ proc stftms*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[T]] =
   let
     rows = input.shape[0]
     cols = input.shape[1]
-  var length = 2 ^ int(log2(float(cols)))
-  if length < cols:
-    length *= 2
+    length = nextPowerOfTwo(cols)
   result = newTensor[Complex[T]](rows, length)
   for i in 0 ..< rows:
     for j in 0 ..< length:
-      result[i, j] = input[i, _].fft[0, j]
+      result[i, j] = (input[i, _].rfft)[0, j]
 
 proc periodogram*[T: SomeFloat](input: Tensor[Complex[T]]): Tensor[T] =
   assert input.rank = 2
@@ -338,22 +335,43 @@ proc frameCepstrum*[T: SomeFloat](input: Tensor[Complex[T]]): Tensor[T] =
   result.ifft.map(x=>x.re)
 
 
-proc melBanks*[T: SomeFloat](rank, n: int, frameRate: float, fl,
-    fh: float): Tensor[T] =
+proc melBanks*[T: SomeFloat](rank, n, rate: int, fl, fh: T): Tensor[T] =
   var temp = newTensor[T](1, rank + 2)
   result = newTensor[T](rank, n)
-  for i in 0 .. rank + 2:
-    temp[i] (n / frameRate) * mel2freq(freq2mel(fl) + i * (freq2mel(fh) -
-        freq2mel(fl)) / (rank+1))
-
+  for i in 0 ..< rank + 2:
+    temp[0, i] = T(n / rate) * mel2freq(freq2mel(fl) + T(i) * (freq2mel(fh) -
+        freq2mel(fl)) / T(rank+1))
   for m in 1 .. rank:
     for k in 0 .. n:
-      if temp[m - 1] <= k and k <= temp[m]:
-        result[m - 1, k] = (k - temp[m - 1]) / (temp[m] - temp[m - 1])
-      elif temp[m] <= k and k <= temp[m + 1]:
-        result[m - 1, k] = (temp[m + 1] - k) / (temp[m + 1] - temp[m])
+      if temp[0, m - 1] <= T(k) and T(k) <= temp[0, m]:
+        result[m - 1, k] = (T(k) - temp[0, m - 1]) / (temp[0, m] - temp[0, m - 1])
+      elif temp[0, m] <= T(k) and T(k) <= temp[0, m + 1]:
+        result[m - 1, k] = (temp[0, m + 1] - T(k)) / (temp[0, m + 1] - temp[0, m])
 
-proc frameMelCoeff*[T]()
+
+
+
+proc frameMelCoeff*[T](input: Tensor[Complex[T]]; rate: int, rank: int): Tensor[float64] = 
+  assert input.rank == 2
+  let
+    rows = input.shape[0]
+    cols = input.shape[1] 
+    temp = input.map(x=>pow(abs(x), 2))
+    left = 0.0
+    right = rate / 2
+    mel = melBanks[T](rank, cols, rate, left, right)
+  var
+    melData = newTensor[T](rows, rank)
+  for i in 0 ..< rows:
+    for j in 0 ..< rank:
+      for k in 0 ..< cols:
+        melData[i, j] += temp[i, k] * mel[j, k]
+      melData[i, j] = log2(melData[i, j])
+  result = newTensor[float64](rows, rank)
+  for i in 0 ..< rows:
+    result[i, _.._] = dct[T](melData[i, _.._])
+
+  
 
 
 when isMainModule:

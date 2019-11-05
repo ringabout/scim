@@ -132,7 +132,7 @@ proc readWavData*[T](fileName: string): WavData[T] =
     bitsPerSample = strm.readUint16()
 
     subchunk2ID = strm.readStr(4)
-    subchunk2Size = int strm.readUint32()
+    subchunk2Size = cast[int](strm.readUint32())
 
   # echo chunkID
   # echo chunkSize
@@ -193,9 +193,9 @@ proc writeWav*[T](fileName: string, rate: uint32, data: Tensor[T]) =
 
 
   let
-    bitDepth = uint16 16
-    bytesPerSecond = uint32 rate * (bitDepth div 8) * channels
-    blockAlign = uint16 channels * (bitDepth div 8)
+    bitDepth = cast[uint16](16)
+    bytesPerSecond = cast[uint32](rate * (bitDepth div 8) * channels)
+    blockAlign = cast[uint16](channels * (bitDepth div 8))
 
   # chunkID
   strm.write("RIFF")
@@ -206,9 +206,9 @@ proc writeWav*[T](fileName: string, rate: uint32, data: Tensor[T]) =
   # subchunk1ID
   strm.write("fmt ")
   # subchunk1Size 16 for PCM
-  strm.write(uint32(16))
+  strm.write(cast[uint32](16))
   # audioFormat 1 for PCM
-  strm.write(uint16(1))
+  strm.write(cast[uint16](1))
   # numChannels
   strm.write(channels)
   # sampleRate
@@ -218,7 +218,7 @@ proc writeWav*[T](fileName: string, rate: uint32, data: Tensor[T]) =
   # blockAlign
   strm.write(blockAlign)
   # bitsPerSample
-  strm.write(uint16(sizeof(T) * 8))
+  strm.write(cast[uint16](sizeof(T) * 8))
   # subchunk2ID
   strm.write("data")
   # subchunk2Size

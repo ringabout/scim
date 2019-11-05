@@ -30,6 +30,15 @@ proc bitReverseCopy[T: ComplexType](x: seq[T]): seq[T] =
 
 
 proc fftAid[T: ComplexType](x: seq[T], flag: float = -1): Tensor[T] =
+  #[
+  TODO
+  var
+    n = x.len
+    n1 = nextPowerOfTwo(n)
+    n2 = int(log2(n.float32))
+    paddingLength = n1 - n
+    temp = x
+  ]#
   var
     n = x.len
     n1 = int(log2(n.float32))
