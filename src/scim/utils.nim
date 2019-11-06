@@ -328,10 +328,9 @@ proc frameCepstrum*[T: SomeFloat](input: Tensor[Complex[T]]): Tensor[T] =
   result = newTensor[T](rows, cols)
   for i in 0 ..< rows:
     for j in 0 .. < cols:
-      var nonZero = abs(input[i, j])
-      if nonZero == 0:
-        nonZero = epsilon(T)
-      result[i, j] = ln(nonZero)
+      var value = abs(input[i, j])
+      zeroHandle(value)
+      result[i, j] = ln(value)
   result.ifft.map(x=>x.re)
 
 
@@ -366,6 +365,7 @@ proc frameMelCoeff*[T](input: Tensor[Complex[T]]; rate: int, rank: int): Tensor[
     for j in 0 ..< rank:
       for k in 0 ..< cols:
         melData[i, j] += temp[i, k] * mel[j, k]
+      zeroHandle(melData[i, j])
       melData[i, j] = log2(melData[i, j])
   result = newTensor[float](rows, rank)
   for i in 0 ..< rows:
