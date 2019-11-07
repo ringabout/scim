@@ -1,7 +1,8 @@
 # scim
 
-Speech recognition tool-box written by Nim.
-Docs in https://xflywind.github.io/scinim/.
+Speech recognition tool-box written by Nim. 
+## Docs 
+https://xflywind.github.io/scinim/
 
 ## Read Wav And Plot
 
