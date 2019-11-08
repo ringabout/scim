@@ -303,8 +303,7 @@ proc stftms*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[T]] =
     length = nextPowerOfTwo(cols)
   result = newTensor[Complex[T]](rows, length)
   for i in 0 ..< rows:
-    for j in 0 ..< length:
-      result[i, j] = (input[i, _].rfft)[0, j]
+    result[i, _] = input[i, _].rfft
 
 proc periodogram*[T: SomeFloat](input: Tensor[Complex[T]]): Tensor[T] =
   assert input.rank = 2
@@ -346,8 +345,7 @@ proc melBanks*[T: SomeFloat](rank, n, rate: int, fl, fh: T): Tensor[T] =
         result[m - 1, k] = (temp[0, m + 1] - T(k)) / (temp[0, m + 1] - temp[0, m])
 
 
-
-
+import timeit
 proc frameMelCoeff*[T](input: Tensor[Complex[T]]; rate: int, rank: int): Tensor[float] = 
   assert input.rank == 2
   let
@@ -357,20 +355,19 @@ proc frameMelCoeff*[T](input: Tensor[Complex[T]]; rate: int, rank: int): Tensor[
     left = 0.0
     right = rate / 2
     mel = melBanks[T](rank, cols, rate, left, right)
-  var
-    melData = newTensor[T](rows, rank)
+
+  result = newTensor[T](rows, rank)
   for i in 0 ..< rows:
     for j in 0 ..< rank:
       for k in 0 ..< cols:
-        melData[i, j] += temp[i, k] * mel[j, k]
-      zeroHandle(melData[i, j])
-      melData[i, j] = log2(melData[i, j])
-  result = newTensor[float](rows, rank)
-  for i in 0 ..< rows:
-    result[i, _.._] = naiveDct[T](melData[i, _.._])
+        result[i, j] += temp[i, k] * mel[j, k]
+      zeroHandle(result[i, j])
+      result[i, j] = log2(result[i, j])
+    result[i, _] = naiveDct[T](result[i, _]) 
+
+
 
   
-
 
 when isMainModule:
   # import timeit
@@ -401,3 +398,4 @@ when isMainModule:
   # echo timeGo(hanning[float](12000))
   # echo "test2"
   # echo timeGo(hamming[float](12000))
+

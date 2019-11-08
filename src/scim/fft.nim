@@ -5,6 +5,19 @@ import math, complex, timeit, sugar, arraymancer, sequtils
 type
   ComplexType = Complex[float] | Complex[float32]
 
+# proc bitReverseCopy[T: ComplexType](x: var Tensor[T]) =
+#   let n = x.shape[1]
+#   var
+#     k: int
+#     j: int = 0
+#   for i in 0 ..< n - 1:
+#     if i < j:
+#       swap(x[0, i], x[0, j])
+#     k = n shr 1
+#     while j >= k:
+#       j -= k
+#       k = k shr 1
+#     j += k
 
 
 proc bitReverseCopy[T: ComplexType](x: var seq[T]) =
@@ -22,26 +35,34 @@ proc bitReverseCopy[T: ComplexType](x: var seq[T]) =
     j += k
 
 
-proc fftAid[T: ComplexType](x: seq[T], flag: float = -1.0): Tensor[T] =
-  #[
-  TODO
-  var
-    n = x.len
-    n1 = nextPowerOfTwo(n)
-    n2 = int(log2(n.float32))
-    paddingLength = n1 - n
-    temp = x
-  ]#
-  # var
-  #   n = x.len
-  #   n1 = int(log2(n.float32))
-  #   n2 = 2 ^ n1
-  #   padding_length: int
-  #   temp = x
-  # if n != n2:
-  #   padding_length = 2 * n2 - n
-  #   n = 2 * n2
-  #   n1 += 1
+# proc fftAid[T: ComplexType](x: Tensor[T], flag: float = -1.0): Tensor[T] {.noinit.} =
+#   let
+#     n = x.shape[1]
+#     n1 = nextPowerOfTwo(n)
+#     n2 = int(log2(n.float32))
+#   result = newTensor[T](1, n1)
+#   for i in 0 ..< n:
+#     result[0, i] = x[0, i]
+#   bitReverseCopy[T](result)
+#   for s in 1 .. n2:
+#     let
+#       m = 2 ^ s
+#       # flag * 2 * Pi
+#       wm = exp(complex(0.0, flag * 2.0 * Pi / float(m)))
+
+#     for k in countup(0, n1 - 1, m):
+#       var w = complex(1.0)
+#       let m2 = m shr 1
+#       for j in 0 ..< m2:
+#         let
+#           t = w * result[0, k + j + m2]
+#           u = result[0, k + j]
+#         result[0, k + j] = u + t
+#         result[0, k + j + m2] = u - t
+#         w = w * wm
+
+
+proc fftAid[T: ComplexType](x: seq[T], flag: float = -1.0): Tensor[T] {.noinit.} =
   let
     n = x.len
     n1 = nextPowerOfTwo(n)
@@ -68,10 +89,13 @@ proc fftAid[T: ComplexType](x: seq[T], flag: float = -1.0): Tensor[T] =
         temp[k + j] = u + t
         temp[k + j + m2] = u - t
         w = w * wm
-  result = temp.toTensor.reshape(1, temp.len)
+  temp.toTensor.reshape(1, temp.len)
 
 
-proc fft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float]] =
+# proc fft*[T: ComplexType](x: Tensor[T]): Tensor[Complex[float]] {.noinit.}=
+#   result = x.fftAid(-1)
+
+proc fft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float]] {.noinit.}=
   var temp: seq[T]
   when x is seq:
     temp = x
@@ -79,10 +103,10 @@ proc fft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float]] =
     temp = x.toRawSeq
   result = temp.fftAid(-1)
 
-proc fft*[T: SomeFloat](x: seq[T] | Tensor[T]): Tensor[Complex[float]] =
+proc fft*[T: SomeFloat](x: seq[T] | Tensor[T]): Tensor[Complex[float]] {.noinit.}=
   result = fft(x.map(t=>t.complex))
 
-proc ifft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float]] =
+proc ifft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float]] {.noinit.}=
   var temp: seq[T]
   when x is seq:
     temp = x
@@ -92,12 +116,11 @@ proc ifft*[T: ComplexType](x: seq[T] | Tensor[T]): Tensor[Complex[float]] =
   #   temp = temp.map(x=>complex(x))
   result = temp.fftAid(1).map(item => item / temp.len.float)
 
-proc ifft*[T: SomeFloat](x: seq[T] | Tensor[T]): Tensor[Complex[float]] =
+proc ifft*[T: SomeFloat](x: seq[T] | Tensor[T]): Tensor[Complex[float]] {.noinit.}=
   result = ifft(x.map(t=>t.complex))
 
-# echo a
 
-proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float]] =
+proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float]] {.noinit.} =
   assert input.rank == 2
   var
     n = input.shape[1]
@@ -130,7 +153,7 @@ proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float]] =
   result[0, half] = complex(temp[0, 0].re - temp[0, 0].im, 0.0)
 
 
-proc dct*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
+proc dct*[T: SomeFloat](input: Tensor[T]): Tensor[float] {.noinit.} =
   assert input.rank == 2
   let
     rows = input.shape[0]
@@ -151,12 +174,12 @@ proc dct*[T: SomeFloat](input: Tensor[T]): Tensor[float] =
 
 
   
-proc naiveDct*[T: SomeFloat](input: Tensor[T]): Tensor[float] = 
+proc naiveDct*[T: SomeFloat](input: Tensor[T]): Tensor[float] {.noinit.}= 
   assert input.rank == 2
   let
-    rows = input.shape[0]
+    _ = input.shape[0]
     cols = input.shape[1]
-    factor = Pi / T(cols)
+    factor = Pi / float(cols)
   result = newTensor[float](1, cols)
   for i in 0 ..< cols:
     var s: T
