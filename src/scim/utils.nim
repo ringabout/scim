@@ -111,8 +111,6 @@ proc honor(coeff: openArray[float], x: float): float =
   for i in countdown(n - 1, 0, 1):
     result = coeff[i] + result * x
 
-
-
 proc besselt0*(x: float): float {.discardable.} =
   ## the modified zeroth-order Bessel function.
   var b: float = abs(x)

@@ -7,29 +7,22 @@ type
 
 
 
-proc bitReverseCopy[T: ComplexType](x: seq[T]): seq[T] =
+proc bitReverseCopy[T: ComplexType](x: var seq[T]) =
   let n = x.len
-  var mid = x
   var
     k: int
-    temp: T
     j: int = 0
   for i in 0 ..< n - 1:
     if i < j:
-      temp = mid[j]
-      mid[j] = mid[i]
-      mid[i] = temp
+      swap(x[i], x[j])
     k = n shr 1
     while j >= k:
       j -= k
       k = k shr 1
     j += k
-  for item in mid:
-    result.add item
 
 
-
-proc fftAid[T: ComplexType](x: seq[T], flag: float = -1): Tensor[T] =
+proc fftAid[T: ComplexType](x: seq[T], flag: float = -1.0): Tensor[T] =
   #[
   TODO
   var
@@ -39,28 +32,35 @@ proc fftAid[T: ComplexType](x: seq[T], flag: float = -1): Tensor[T] =
     paddingLength = n1 - n
     temp = x
   ]#
-  var
+  # var
+  #   n = x.len
+  #   n1 = int(log2(n.float32))
+  #   n2 = 2 ^ n1
+  #   padding_length: int
+  #   temp = x
+  # if n != n2:
+  #   padding_length = 2 * n2 - n
+  #   n = 2 * n2
+  #   n1 += 1
+  let
     n = x.len
-    n1 = int(log2(n.float32))
-    n2 = 2 ^ n1
-    padding_length: int
-    temp = x
-  if n != n2:
-    padding_length = 2 * n2 - n
-    n = 2 * n2
-    n1 += 1
+    n1 = nextPowerOfTwo(n)
+    n2 = int(log2(n.float32))
+    paddingLength = n1 - n
+  var temp = x
+
   for i in 1 .. padding_length:
     temp.add(complex(0.0))
-  temp = bitReverseCopy[T](temp)
-  for s in 1 .. n1:
+  bitReverseCopy[T](temp)
+  for s in 1 .. n2:
     let
       m = 2 ^ s
       # flag * 2 * Pi
       wm = exp(complex(0.0, flag * 2.0 * Pi / float(m)))
 
-    for k in countup(0, n - 1, m):
+    for k in countup(0, n1 - 1, m):
       var w = complex(1.0)
-      let m2 = m div 2
+      let m2 = m shr 1
       for j in 0 ..< m2:
         let
           t = w * temp[k + j + m2]
@@ -101,7 +101,7 @@ proc rfft*[T: SomeFloat](input: Tensor[T]): Tensor[Complex[float]] =
   assert input.rank == 2
   var
     n = input.shape[1]
-    half = n div 2
+    half = n shr 1
     A = newTensor[Complex[T]](half)
     B = newTensor[Complex[T]](half)
     # IA = newTensor[Complex[T]](half)
@@ -173,9 +173,9 @@ when isMainModule:
   # var b = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0].map(x=>complex(x))
   # var c = @[1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0].toTensor.reshape(1, 9)
   var c = randomTensor[float](1, 256, 3.0)
-  timeOnce:
+  timeOnce("dct"):
     echo dct(c)
-  timeOnce:
+  timeOnce("naive dct"):
     echo naiveDct(c)
   # timeOnce:
   #   discard
