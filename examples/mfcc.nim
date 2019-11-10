@@ -10,8 +10,8 @@ timeOnce("wave"):
     (data, rate) = readWavData[float]("test.wav")
     dmax = data.max
   data = data.map(x=>x/dmax)
-  var input = enframe[float](data, 256, 80)
-  let 
+  let
+    input = enframe[float](data, 256, 80)
     fData = stftms(input)
     banks = 16
     res = frameMelCoeff[float](fData, cast[int](rate), banks)
